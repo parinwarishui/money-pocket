@@ -7,6 +7,7 @@ import TransactionForm from "./components/TransactionForm.jsx";
 import AddMoneyForm from "./components/AddMoneyForm.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import SettingsView from "./components/SettingsView.jsx";
+import Icon from "./components/Icon.jsx";
 import { getPeriodRange, shiftAnchor, todayISO } from "./utils/dateUtils.js";
 
 export default function App() {
@@ -94,7 +95,7 @@ export default function App() {
           <h1>Money Pocket</h1>
         </div>
         <button className="icon-btn" onClick={() => setView("settings")} aria-label="Settings">
-          ⚙
+          <Icon name="settings" />
         </button>
       </header>
 

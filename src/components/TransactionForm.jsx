@@ -56,7 +56,7 @@ export default function TransactionForm({ editingTransaction, onClose }) {
             <select value={categoryName} onChange={(e) => setCategoryName(e.target.value)}>
               {categories.map((c) => (
                 <option key={c.id} value={c.name}>
-                  {c.emoji} {c.name}
+                  {c.name}
                 </option>
               ))}
             </select>

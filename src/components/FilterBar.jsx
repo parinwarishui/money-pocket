@@ -42,7 +42,7 @@ export default function FilterBar({
         <option value="">All categories</option>
         {categories.map((c) => (
           <option key={c.id} value={c.name}>
-            {c.emoji} {c.name}
+            {c.name}
           </option>
         ))}
       </select>

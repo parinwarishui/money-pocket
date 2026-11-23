@@ -1,5 +1,6 @@
 import { getCurrency } from "../data/currencies.js";
 import { formatDayHeading } from "../utils/dateUtils.js";
+import Icon from "./Icon.jsx";
 
 export default function TransactionList({ transactions, onEdit, onDelete }) {
   if (transactions.length === 0) {
@@ -53,12 +54,14 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
                         <>
                           <span className="tx-title">{tx.note}</span>
                           <span className="tx-subtitle">
-                            {tx.categoryEmoji} {tx.categoryName}
+                            <Icon name={tx.categoryIcon} className="tx-icon" />
+                            {tx.categoryName}
                           </span>
                         </>
                       ) : (
-                        <span className="tx-title">
-                          {tx.categoryEmoji} {tx.categoryName}
+                        <span className="tx-title tx-title-with-icon">
+                          <Icon name={tx.categoryIcon} className="tx-icon" />
+                          {tx.categoryName}
                         </span>
                       )}
                     </span>
@@ -69,7 +72,7 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
                     </span>
                   </button>
                   <button className="delete-btn" onClick={() => onDelete(tx.id)} aria-label="Delete transaction">
-                    ✕
+                    <Icon name="close" />
                   </button>
                 </li>
               ))}

@@ -1,11 +1,12 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { DEFAULT_CATEGORIES } from "../data/categories.js";
+import { iconForName, DEFAULT_ICON } from "../data/icons.js";
 
 const STORAGE_KEY = "money-pocket-data";
 
 // Income transactions don't use the category system — every income row
 // gets this fixed label instead of a picked category.
-export const INCOME_LABEL = { emoji: "💰", name: "Income" };
+export const INCOME_LABEL = { icon: "payments", name: "Income" };
 
 const AppContext = createContext(null);
 
@@ -27,10 +28,26 @@ function loadInitialState() {
       lastUsedCurrencyCode: "SGD",
     };
   }
-  // Migration: every transaction saved before income existed was spending.
-  state.transactions = (state.transactions || []).map((tx) =>
-    tx.type ? tx : { ...tx, type: "expense" },
-  );
+
+  // Migration: categories used to store an emoji glyph. Icons are
+  // identified by a plain ASCII name instead (see src/data/icons.js), so
+  // derive one from the category's name — which was never corrupted —
+  // rather than trying to interpret whatever is in the old `emoji` field.
+  state.categories = (state.categories || []).map((c) => {
+    if (c.icon) return c;
+    const { emoji, ...rest } = c;
+    return { ...rest, icon: iconForName(c.name) || DEFAULT_ICON };
+  });
+
+  state.transactions = (state.transactions || []).map((tx) => {
+    // Migration: every transaction saved before income existed was spending.
+    const withType = tx.type ? tx : { ...tx, type: "expense" };
+    // Migration: categoryEmoji -> categoryIcon, same reasoning as above.
+    if (withType.categoryIcon) return withType;
+    const { categoryEmoji, ...rest } = withType;
+    return { ...rest, categoryIcon: iconForName(withType.categoryName) || DEFAULT_ICON };
+  });
+
   return state;
 }
 
@@ -48,7 +65,7 @@ export function AppProvider({ children }) {
       id: crypto.randomUUID(),
       date,
       type: "expense",
-      categoryEmoji: category.emoji,
+      categoryIcon: category.icon,
       categoryName: category.name,
       amount,
       currencyCode,
@@ -70,7 +87,7 @@ export function AppProvider({ children }) {
               ...tx,
               date,
               type: "expense",
-              categoryEmoji: category.emoji,
+              categoryIcon: category.icon,
               categoryName: category.name,
               amount,
               currencyCode,
@@ -96,7 +113,7 @@ export function AppProvider({ children }) {
       id: crypto.randomUUID(),
       date,
       type: "income",
-      categoryEmoji: INCOME_LABEL.emoji,
+      categoryIcon: INCOME_LABEL.icon,
       categoryName: INCOME_LABEL.name,
       amount,
       currencyCode,
@@ -118,7 +135,7 @@ export function AppProvider({ children }) {
               ...tx,
               date,
               type: "income",
-              categoryEmoji: INCOME_LABEL.emoji,
+              categoryIcon: INCOME_LABEL.icon,
               categoryName: INCOME_LABEL.name,
               amount,
               currencyCode,
@@ -132,23 +149,23 @@ export function AppProvider({ children }) {
 
   // ----- categories -----
 
-  function addCategory({ emoji, name }) {
+  function addCategory({ icon, name }) {
     setState((prev) => ({
       ...prev,
-      categories: [...prev.categories, { id: crypto.randomUUID(), emoji, name }],
+      categories: [...prev.categories, { id: crypto.randomUUID(), icon, name }],
     }));
   }
 
-  function updateCategory(id, { emoji, name }) {
+  function updateCategory(id, { icon, name }) {
     setState((prev) => ({
       ...prev,
-      categories: prev.categories.map((c) => (c.id === id ? { ...c, emoji, name } : c)),
+      categories: prev.categories.map((c) => (c.id === id ? { ...c, icon, name } : c)),
     }));
   }
 
   function deleteCategory(id) {
     // Safe to delete unconditionally: transactions snapshot their
-    // category's emoji/name at creation time, so nothing else
+    // category's icon/name at creation time, so nothing else
     // depends on this category still existing.
     setState((prev) => ({
       ...prev,
@@ -173,10 +190,15 @@ export function AppProvider({ children }) {
       const existingTxIds = new Set(prev.transactions.map((t) => t.id));
       const newTx = importedTx
         .filter((t) => !existingTxIds.has(t.id))
-        .map((t) => (t.type ? t : { ...t, type: "expense" }));
+        .map((t) => (t.type ? t : { ...t, type: "expense" }))
+        .map((t) =>
+          t.categoryIcon ? t : { ...t, categoryIcon: iconForName(t.categoryName) || DEFAULT_ICON },
+        );
 
       const existingCatIds = new Set(prev.categories.map((c) => c.id));
-      const newCats = (importedCats || []).filter((c) => !existingCatIds.has(c.id));
+      const newCats = (importedCats || [])
+        .filter((c) => !existingCatIds.has(c.id))
+        .map((c) => (c.icon ? c : { ...c, icon: iconForName(c.name) || DEFAULT_ICON }));
 
       return {
         ...prev,

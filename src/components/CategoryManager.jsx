@@ -1,22 +1,23 @@
 import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
-import { EMOJI_OPTIONS } from "../data/emojiOptions.js";
+import { ICON_OPTIONS } from "../data/icons.js";
+import Icon from "./Icon.jsx";
 
 export default function CategoryManager() {
   const { categories, addCategory, updateCategory, deleteCategory } = useApp();
   const [editingId, setEditingId] = useState(null);
-  const [emoji, setEmoji] = useState(EMOJI_OPTIONS[0]);
+  const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [name, setName] = useState("");
 
   function startAdd() {
     setEditingId("new");
-    setEmoji(EMOJI_OPTIONS[0]);
+    setIcon(ICON_OPTIONS[0]);
     setName("");
   }
 
   function startEdit(category) {
     setEditingId(category.id);
-    setEmoji(category.emoji);
+    setIcon(category.icon);
     setName(category.name);
   }
 
@@ -27,9 +28,9 @@ export default function CategoryManager() {
   function save() {
     if (!name.trim()) return;
     if (editingId === "new") {
-      addCategory({ emoji, name: name.trim() });
+      addCategory({ icon, name: name.trim() });
     } else {
-      updateCategory(editingId, { emoji, name: name.trim() });
+      updateCategory(editingId, { icon, name: name.trim() });
     }
     setEditingId(null);
   }
@@ -40,7 +41,9 @@ export default function CategoryManager() {
       <ul className="manager-list">
         {categories.map((c) => (
           <li key={c.id}>
-            <span>{c.emoji} {c.name}</span>
+            <span className="manager-item-label">
+              <Icon name={c.icon} /> {c.name}
+            </span>
             <span className="manager-actions">
               <button className="btn btn-ghost btn-sm" onClick={() => startEdit(c)}>Edit</button>
               <button className="btn btn-text-danger btn-sm" onClick={() => deleteCategory(c.id)}>
@@ -53,15 +56,16 @@ export default function CategoryManager() {
 
       {editingId ? (
         <div className="manager-form">
-          <div className="emoji-grid">
-            {EMOJI_OPTIONS.map((e) => (
+          <div className="icon-grid">
+            {ICON_OPTIONS.map((i) => (
               <button
-                key={e}
+                key={i}
                 type="button"
-                className={e === emoji ? "emoji-selected" : ""}
-                onClick={() => setEmoji(e)}
+                className={i === icon ? "icon-selected" : ""}
+                onClick={() => setIcon(i)}
+                aria-label={i.replaceAll("_", " ")}
               >
-                {e}
+                <Icon name={i} />
               </button>
             ))}
           </div>
