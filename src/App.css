@@ -134,7 +134,7 @@ button, input, select { font-family: inherit; color: inherit; }
 
 /* FAB */
 .fab {
-  position: fixed; bottom: 80px; right: 24px;
+  position: fixed; bottom: 24px; right: 24px;
   width: 56px; height: 56px; border-radius: 50%;
   background: var(--accent); color: white; font-size: 1.8rem; font-weight: 300;
   border: none; cursor: pointer;
