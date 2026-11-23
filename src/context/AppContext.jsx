@@ -1,25 +1,37 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { DEFAULT_CATEGORIES } from "../data/categories.js";
 
 const STORAGE_KEY = "money-pocket-data";
+
+// Income transactions don't use the category system — every income row
+// gets this fixed label instead of a picked category.
+export const INCOME_LABEL = { emoji: "💰", name: "Income" };
 
 const AppContext = createContext(null);
 
 function loadInitialState() {
   const raw = localStorage.getItem(STORAGE_KEY);
+  let state = null;
   if (raw) {
     try {
-      return JSON.parse(raw);
+      state = JSON.parse(raw);
     } catch {
       // corrupted JSON — fall through to defaults
     }
   }
-  return {
-    transactions: [],
-    categories: DEFAULT_CATEGORIES,
-    activeCurrencyCodes: ["SGD"],
-    lastUsedCurrencyCode: "SGD",
-  };
+  if (!state) {
+    state = {
+      transactions: [],
+      categories: DEFAULT_CATEGORIES,
+      activeCurrencyCodes: ["SGD"],
+      lastUsedCurrencyCode: "SGD",
+    };
+  }
+  // Migration: every transaction saved before income existed was spending.
+  state.transactions = (state.transactions || []).map((tx) =>
+    tx.type ? tx : { ...tx, type: "expense" },
+  );
+  return state;
 }
 
 export function AppProvider({ children }) {
@@ -29,12 +41,13 @@ export function AppProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  // ----- transactions -----
+  // ----- transactions: spending -----
 
   function addTransaction({ date, category, amount, currencyCode, note }) {
     const newTx = {
       id: crypto.randomUUID(),
       date,
+      type: "expense",
       categoryEmoji: category.emoji,
       categoryName: category.name,
       amount,
@@ -56,6 +69,7 @@ export function AppProvider({ children }) {
           ? {
               ...tx,
               date,
+              type: "expense",
               categoryEmoji: category.emoji,
               categoryName: category.name,
               amount,
@@ -72,6 +86,47 @@ export function AppProvider({ children }) {
     setState((prev) => ({
       ...prev,
       transactions: prev.transactions.filter((tx) => tx.id !== id),
+    }));
+  }
+
+  // ----- transactions: income -----
+
+  function addIncomeTransaction({ date, amount, currencyCode, note }) {
+    const newTx = {
+      id: crypto.randomUUID(),
+      date,
+      type: "income",
+      categoryEmoji: INCOME_LABEL.emoji,
+      categoryName: INCOME_LABEL.name,
+      amount,
+      currencyCode,
+      note: note || "",
+    };
+    setState((prev) => ({
+      ...prev,
+      transactions: [newTx, ...prev.transactions],
+      lastUsedCurrencyCode: currencyCode,
+    }));
+  }
+
+  function updateIncomeTransaction(id, { date, amount, currencyCode, note }) {
+    setState((prev) => ({
+      ...prev,
+      transactions: prev.transactions.map((tx) =>
+        tx.id === id
+          ? {
+              ...tx,
+              date,
+              type: "income",
+              categoryEmoji: INCOME_LABEL.emoji,
+              categoryName: INCOME_LABEL.name,
+              amount,
+              currencyCode,
+              note: note || "",
+            }
+          : tx,
+      ),
+      lastUsedCurrencyCode: currencyCode,
     }));
   }
 
@@ -116,7 +171,9 @@ export function AppProvider({ children }) {
   function mergeImportedData({ transactions: importedTx, categories: importedCats }) {
     setState((prev) => {
       const existingTxIds = new Set(prev.transactions.map((t) => t.id));
-      const newTx = importedTx.filter((t) => !existingTxIds.has(t.id));
+      const newTx = importedTx
+        .filter((t) => !existingTxIds.has(t.id))
+        .map((t) => (t.type ? t : { ...t, type: "expense" }));
 
       const existingCatIds = new Set(prev.categories.map((c) => c.id));
       const newCats = (importedCats || []).filter((c) => !existingCatIds.has(c.id));
@@ -131,14 +188,29 @@ export function AppProvider({ children }) {
     });
   }
 
+  // ----- computed: running balance per currency (income minus spending,
+  // always all-time, never affected by the list's filters) -----
+
+  const balancesByCurrency = useMemo(() => {
+    const totals = {};
+    for (const tx of state.transactions) {
+      const signed = tx.type === "income" ? tx.amount : -tx.amount;
+      totals[tx.currencyCode] = (totals[tx.currencyCode] || 0) + signed;
+    }
+    return totals;
+  }, [state.transactions]);
+
   const value = {
     transactions: state.transactions,
     categories: state.categories,
     activeCurrencyCodes: state.activeCurrencyCodes,
     lastUsedCurrencyCode: state.lastUsedCurrencyCode,
+    balancesByCurrency,
     addTransaction,
     updateTransaction,
     deleteTransaction,
+    addIncomeTransaction,
+    updateIncomeTransaction,
     addCategory,
     updateCategory,
     deleteCategory,

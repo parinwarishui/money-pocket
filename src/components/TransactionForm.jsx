@@ -91,10 +91,10 @@ export default function TransactionForm({ editingTransaction, onClose }) {
           </label>
 
           <div className="sheet-actions">
-            <button type="button" onClick={onClose}>
+            <button type="button" className="btn btn-ghost" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit">{isEditing ? "Save" : "Add"}</button>
+            <button type="submit" className="btn btn-primary">{isEditing ? "Save" : "Add"}</button>
           </div>
         </form>
       </div>

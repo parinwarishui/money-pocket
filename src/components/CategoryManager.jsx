@@ -42,8 +42,10 @@ export default function CategoryManager() {
           <li key={c.id}>
             <span>{c.emoji} {c.name}</span>
             <span className="manager-actions">
-              <button onClick={() => startEdit(c)}>Edit</button>
-              <button onClick={() => deleteCategory(c.id)}>Delete</button>
+              <button className="btn btn-ghost btn-sm" onClick={() => startEdit(c)}>Edit</button>
+              <button className="btn btn-text-danger btn-sm" onClick={() => deleteCategory(c.id)}>
+                Delete
+              </button>
             </span>
           </li>
         ))}
@@ -70,12 +72,12 @@ export default function CategoryManager() {
             onChange={(ev) => setName(ev.target.value)}
           />
           <div className="sheet-actions">
-            <button onClick={cancel}>Cancel</button>
-            <button onClick={save}>Save</button>
+            <button className="btn btn-ghost" onClick={cancel}>Cancel</button>
+            <button className="btn btn-primary" onClick={save}>Save</button>
           </div>
         </div>
       ) : (
-        <button onClick={startAdd}>+ Add category</button>
+        <button className="btn btn-outline" onClick={startAdd}>+ Add category</button>
       )}
     </section>
   );

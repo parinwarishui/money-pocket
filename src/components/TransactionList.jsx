@@ -19,10 +19,11 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
   return (
     <div className="transaction-list">
       {groups.map((group) => {
+        // Net (income minus spending) per currency for this day.
         const subtotalsByCurrency = {};
         for (const tx of group.items) {
-          subtotalsByCurrency[tx.currencyCode] =
-            (subtotalsByCurrency[tx.currencyCode] || 0) + tx.amount;
+          const signed = tx.type === "income" ? tx.amount : -tx.amount;
+          subtotalsByCurrency[tx.currencyCode] = (subtotalsByCurrency[tx.currencyCode] || 0) + signed;
         }
 
         return (
@@ -30,19 +31,39 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
             <div className="day-heading">
               <span>{formatDayHeading(group.date)}</span>
               <span className="day-subtotal">
-                {Object.entries(subtotalsByCurrency)
-                  .map(([code, total]) => `${getCurrency(code)?.symbol ?? code}${total.toFixed(2)}`)
-                  .join(" + ")}
+                {Object.entries(subtotalsByCurrency).map(([code, total]) => {
+                  const sign = total >= 0 ? "+" : "-";
+                  const symbol = getCurrency(code)?.symbol ?? code;
+                  return (
+                    <span key={code} className="day-subtotal-item">
+                      {sign}
+                      {symbol}
+                      {Math.abs(total).toFixed(2)}
+                    </span>
+                  );
+                })}
               </span>
             </div>
             <ul>
               {group.items.map((tx) => (
                 <li key={tx.id} className="transaction-row">
                   <button className="transaction-main" onClick={() => onEdit(tx)}>
-                    <span className="emoji">{tx.categoryEmoji}</span>
-                    <span className="category-name">{tx.categoryName}</span>
-                    {tx.note && <span className="note">— {tx.note}</span>}
-                    <span className="amount">
+                    <span className="transaction-text">
+                      {tx.note ? (
+                        <>
+                          <span className="tx-title">{tx.note}</span>
+                          <span className="tx-subtitle">
+                            {tx.categoryEmoji} {tx.categoryName}
+                          </span>
+                        </>
+                      ) : (
+                        <span className="tx-title">
+                          {tx.categoryEmoji} {tx.categoryName}
+                        </span>
+                      )}
+                    </span>
+                    <span className={tx.type === "income" ? "amount amount-income" : "amount amount-expense"}>
+                      {tx.type === "income" ? "+" : "-"}
                       {getCurrency(tx.currencyCode)?.symbol ?? tx.currencyCode}
                       {tx.amount.toFixed(2)}
                     </span>

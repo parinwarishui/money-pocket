@@ -30,13 +30,17 @@ export default function SettingsView({ onClose }) {
     <div className="settings-view">
       <div className="settings-header">
         <h1>Settings</h1>
-        <button onClick={onClose}>Close</button>
+        <button className="btn btn-ghost" onClick={onClose}>Close</button>
       </div>
 
       <section className="manager-section">
         <h2>Backup</h2>
-        <button onClick={handleExport}>Export to Excel</button>
-        <button onClick={() => fileInputRef.current?.click()}>Import from Excel</button>
+        <div className="button-row">
+          <button className="btn btn-outline" onClick={handleExport}>Export to Excel</button>
+          <button className="btn btn-outline" onClick={() => fileInputRef.current?.click()}>
+            Import from Excel
+          </button>
+        </div>
         <input
           type="file"
           accept=".xlsx"

@@ -22,7 +22,7 @@ export default function CurrencyManager() {
       </ul>
 
       {available.length > 0 && (
-        <div className="manager-form">
+        <div className="manager-form currency-add-row">
           <select value={selected} onChange={(e) => setSelected(e.target.value)}>
             {available.map((c) => (
               <option key={c.code} value={c.code}>
@@ -30,7 +30,9 @@ export default function CurrencyManager() {
               </option>
             ))}
           </select>
-          <button onClick={() => addCurrency(selected)}>+ Add currency</button>
+          <button className="btn btn-primary btn-sm" onClick={() => addCurrency(selected)}>
+            + Add currency
+          </button>
         </div>
       )}
     </section>

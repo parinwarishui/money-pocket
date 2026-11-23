@@ -4,6 +4,7 @@ export function exportToXlsx(transactions, categories) {
   const txRows = transactions.map((t) => ({
     ID: t.id,
     Date: t.date,
+    Type: t.type === "income" ? "Income" : "Expense",
     "Category Emoji": t.categoryEmoji,
     "Category Name": t.categoryName,
     Amount: t.amount,
@@ -41,6 +42,9 @@ export function importFromXlsxFile(file) {
         const transactions = txRows.map((row) => ({
           id: String(row.ID),
           date: String(row.Date),
+          // Backups made before income existed have no Type column —
+          // everything in them was spending.
+          type: String(row.Type || "Expense").toLowerCase() === "income" ? "income" : "expense",
           categoryEmoji: row["Category Emoji"] || "",
           categoryName: row["Category Name"] || "",
           amount: Number(row.Amount),

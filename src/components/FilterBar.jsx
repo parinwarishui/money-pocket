@@ -7,10 +7,18 @@ const PERIOD_TYPES = [
   { value: "year", label: "Year" },
 ];
 
+const TYPE_FILTERS = [
+  { value: "all", label: "All" },
+  { value: "expense", label: "Spending" },
+  { value: "income", label: "Income" },
+];
+
 export default function FilterBar({
   categories,
   categoryFilter,
   onCategoryFilterChange,
+  typeFilter,
+  onTypeFilterChange,
   periodType,
   onPeriodTypeChange,
   anchorISO,
@@ -18,7 +26,19 @@ export default function FilterBar({
 }) {
   return (
     <div className="filter-bar">
-      <select value={categoryFilter} onChange={(e) => onCategoryFilterChange(e.target.value)}>
+      <select value={typeFilter} onChange={(e) => onTypeFilterChange(e.target.value)}>
+        {TYPE_FILTERS.map((t) => (
+          <option key={t.value} value={t.value}>
+            {t.label}
+          </option>
+        ))}
+      </select>
+
+      <select
+        value={categoryFilter}
+        onChange={(e) => onCategoryFilterChange(e.target.value)}
+        disabled={typeFilter === "income"}
+      >
         <option value="">All categories</option>
         {categories.map((c) => (
           <option key={c.id} value={c.name}>
