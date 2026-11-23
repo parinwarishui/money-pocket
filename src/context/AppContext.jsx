@@ -131,32 +131,6 @@ export function AppProvider({ children }) {
     });
   }
 
-  // ----- bank statement import (reviewed rows -> real transactions) -----
-
-  function importStatementTransactions(rows) {
-    // rows: [{ date, description, amount, currencyCode, categoryName }]
-    setState((prev) => {
-      const newTx = rows.map((row) => {
-        const category =
-          prev.categories.find((c) => c.name === row.categoryName) || prev.categories[0];
-        return {
-          id: crypto.randomUUID(),
-          date: row.date,
-          categoryEmoji: category.emoji,
-          categoryName: category.name,
-          amount: row.amount,
-          currencyCode: row.currencyCode,
-          note: row.description || "",
-        };
-      });
-      return {
-        ...prev,
-        transactions: [...newTx, ...prev.transactions],
-        lastUsedCurrencyCode: rows.length ? rows[rows.length - 1].currencyCode : prev.lastUsedCurrencyCode,
-      };
-    });
-  }
-
   const value = {
     transactions: state.transactions,
     categories: state.categories,
@@ -170,7 +144,6 @@ export function AppProvider({ children }) {
     deleteCategory,
     addCurrency,
     mergeImportedData,
-    importStatementTransactions,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

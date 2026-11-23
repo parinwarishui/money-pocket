@@ -1,14 +1,12 @@
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import CategoryManager from "./CategoryManager.jsx";
 import CurrencyManager from "./CurrencyManager.jsx";
-import StatementImport from "./StatementImport.jsx";
 import { exportToXlsx, importFromXlsxFile } from "../utils/exportImport.js";
 
 export default function SettingsView({ onClose }) {
   const { transactions, categories, mergeImportedData } = useApp();
   const fileInputRef = useRef(null);
-  const [showStatementImport, setShowStatementImport] = useState(false);
 
   function handleExport() {
     exportToXlsx(transactions, categories);
@@ -48,15 +46,8 @@ export default function SettingsView({ onClose }) {
         />
       </section>
 
-      <section className="manager-section">
-        <h2>Bank statement</h2>
-        <button onClick={() => setShowStatementImport(true)}>Import bank statement (AI categorize)</button>
-      </section>
-
       <CategoryManager />
       <CurrencyManager />
-
-      {showStatementImport && <StatementImport onClose={() => setShowStatementImport(false)} />}
     </div>
   );
 }
