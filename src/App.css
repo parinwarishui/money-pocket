@@ -1,0 +1,83 @@
+* { box-sizing: border-box; }
+body { margin: 0; font-family: system-ui, sans-serif; }
+
+.app { max-width: 480px; margin: 0 auto; padding: 16px; padding-bottom: 96px; }
+.app-header { display: flex; justify-content: space-between; align-items: center; }
+
+.filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin: 12px 0; }
+.period-nav { display: flex; align-items: center; gap: 8px; }
+
+.empty-state { color: #888; text-align: center; margin-top: 40px; }
+
+.day-group { margin-bottom: 16px; }
+.day-heading {
+  display: flex; justify-content: space-between;
+  font-weight: 600; padding: 4px 0; border-bottom: 1px solid #ddd;
+}
+
+.transaction-list ul { list-style: none; margin: 0; padding: 0; }
+.transaction-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 0; border-bottom: 1px solid #eee;
+}
+.transaction-main {
+  flex: 1; display: flex; gap: 8px; align-items: center;
+  background: none; border: none; text-align: left; padding: 0;
+  cursor: pointer; font-size: 1rem;
+}
+.transaction-main .amount { margin-left: auto; font-weight: 600; }
+.delete-btn { background: none; border: none; color: #c00; cursor: pointer; font-size: 1rem; }
+
+.fab {
+  position: fixed; bottom: 24px; right: 24px;
+  width: 56px; height: 56px; border-radius: 50%;
+  background: #2563eb; color: white; font-size: 1.8rem; border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3); cursor: pointer;
+}
+
+.sheet-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.4);
+  display: flex; align-items: flex-end; z-index: 10;
+}
+.sheet {
+  background: white; width: 100%; max-width: 480px; margin: 0 auto;
+  border-radius: 16px 16px 0 0; padding: 20px; max-height: 85vh; overflow-y: auto;
+}
+.sheet form { display: flex; flex-direction: column; gap: 12px; }
+.sheet label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.sheet input, .sheet select { padding: 8px; font-size: 1rem; }
+.sheet-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 8px; }
+
+.settings-view { max-width: 480px; margin: 0 auto; padding: 16px; }
+.settings-header { display: flex; justify-content: space-between; align-items: center; }
+.manager-section { margin-top: 24px; }
+.manager-list { list-style: none; padding: 0; }
+.manager-list li { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #eee; }
+.manager-actions button { margin-left: 8px; }
+.emoji-grid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 4px; margin: 8px 0; }
+.emoji-grid button { font-size: 1.3rem; padding: 6px; border: 1px solid #ddd; background: white; border-radius: 6px; cursor: pointer; }
+.emoji-selected { border-color: #2563eb !important; background: #dbeafe !important; }
+
+.import-sheet { max-width: 480px; }
+.import-step { display: flex; flex-direction: column; gap: 12px; }
+.import-step label { display: flex; flex-direction: column; gap: 4px; font-size: 0.9rem; }
+.import-step select, .import-step input[type="file"] { padding: 8px; font-size: 1rem; }
+.checkbox-label { flex-direction: row !important; align-items: center; gap: 8px !important; }
+.hint-text { color: #666; font-size: 0.85rem; margin: 0; }
+.error-text { color: #c00; font-size: 0.85rem; margin: 0; }
+
+.import-review-list { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow-y: auto; }
+.import-review-list li {
+  padding: 10px 0; border-bottom: 1px solid #eee;
+  display: flex; flex-direction: column; gap: 4px;
+}
+.import-row-excluded { opacity: 0.5; }
+.import-row-top { display: flex; align-items: center; gap: 8px; }
+.import-row-date { color: #666; font-size: 0.85rem; }
+.import-row-amount { margin-left: auto; font-weight: 600; }
+.import-row-desc { font-size: 0.9rem; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.import-dup-badge {
+  font-size: 0.7rem; background: #fef3c7; color: #92400e;
+  padding: 2px 6px; border-radius: 4px;
+}
+.import-review-list select { width: 100%; padding: 6px; }
