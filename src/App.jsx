@@ -7,6 +7,7 @@ import TransactionForm from "./components/TransactionForm.jsx";
 import AddMoneyForm from "./components/AddMoneyForm.jsx";
 import FilterBar from "./components/FilterBar.jsx";
 import SettingsView from "./components/SettingsView.jsx";
+import ChartsView from "./components/ChartsView.jsx";
 import Icon from "./components/Icon.jsx";
 import { getPeriodRange, shiftAnchor, todayISO } from "./utils/dateUtils.js";
 
@@ -14,7 +15,7 @@ export default function App() {
   const { transactions, categories, activeCurrencyCodes, balancesByCurrency, deleteTransaction } =
     useApp();
 
-  const [view, setView] = useState("list"); // "list" | "settings"
+  const [view, setView] = useState("list"); // "list" | "settings" | "charts"
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isAddMoneyOpen, setIsAddMoneyOpen] = useState(false);
   const [editingTransaction, setEditingTransaction] = useState(null);
@@ -87,6 +88,10 @@ export default function App() {
     return <SettingsView onClose={() => setView("list")} />;
   }
 
+  if (view === "charts") {
+    return <ChartsView onClose={() => setView("list")} />;
+  }
+
   return (
     <div className="app">
       <header className="app-header">
@@ -94,9 +99,14 @@ export default function App() {
           <img src="/favicon.svg" alt="" className="app-logo" />
           <h1>Money Pocket</h1>
         </div>
-        <button className="icon-btn" onClick={() => setView("settings")} aria-label="Settings">
-          <Icon name="settings" />
-        </button>
+        <div className="app-header-actions">
+          <button className="icon-btn" onClick={() => setView("charts")} aria-label="Spending charts">
+            <Icon name="bar_chart" />
+          </button>
+          <button className="icon-btn" onClick={() => setView("settings")} aria-label="Settings">
+            <Icon name="settings" />
+          </button>
+        </div>
       </header>
 
       <section className="balance-hero">

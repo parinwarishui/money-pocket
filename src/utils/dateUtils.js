@@ -15,9 +15,13 @@ function toISO(date) {
 }
 
 // Returns { start, end } ISO strings (inclusive) for the calendar period
-// containing `anchorISO`, for periodType "week" | "month" | "year".
+// containing `anchorISO`, for periodType "day" | "week" | "month" | "year".
 export function getPeriodRange(periodType, anchorISO) {
   const anchor = parseISO(anchorISO);
+
+  if (periodType === "day") {
+    return { start: anchorISO, end: anchorISO };
+  }
 
   if (periodType === "week") {
     const day = anchor.getDay(); // 0 = Sunday
@@ -48,7 +52,8 @@ export function shiftAnchor(periodType, anchorISO, direction) {
   const anchor = parseISO(anchorISO);
   const sign = direction === "next" ? 1 : -1;
 
-  if (periodType === "week") anchor.setDate(anchor.getDate() + 7 * sign);
+  if (periodType === "day") anchor.setDate(anchor.getDate() + sign);
+  else if (periodType === "week") anchor.setDate(anchor.getDate() + 7 * sign);
   else if (periodType === "month") anchor.setMonth(anchor.getMonth() + sign);
   else if (periodType === "year") anchor.setFullYear(anchor.getFullYear() + sign);
 
@@ -61,6 +66,13 @@ function formatShort(date) {
 
 export function formatPeriodLabel(periodType, anchorISO) {
   const anchor = parseISO(anchorISO);
+  if (periodType === "day") {
+    if (anchorISO === todayISO()) return "Today";
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    if (anchorISO === toISO(yesterday)) return "Yesterday";
+    return anchor.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" });
+  }
   if (periodType === "week") {
     const { start, end } = getPeriodRange("week", anchorISO);
     return `${formatShort(parseISO(start))} – ${formatShort(parseISO(end))}`;
