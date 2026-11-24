@@ -1,5 +1,6 @@
 import { getCurrency } from "../data/currencies.js";
 import { formatDayHeading } from "../utils/dateUtils.js";
+import { groupTransactionsByDay } from "../utils/groupTransactions.js";
 import Icon from "./Icon.jsx";
 
 export default function TransactionList({ transactions, onEdit, onDelete }) {
@@ -7,15 +8,7 @@ export default function TransactionList({ transactions, onEdit, onDelete }) {
     return <p className="empty-state">No transactions in this view yet.</p>;
   }
 
-  const groups = [];
-  let currentGroup = null;
-  for (const tx of transactions) {
-    if (!currentGroup || currentGroup.date !== tx.date) {
-      currentGroup = { date: tx.date, items: [] };
-      groups.push(currentGroup);
-    }
-    currentGroup.items.push(tx);
-  }
+  const groups = groupTransactionsByDay(transactions);
 
   return (
     <div className="transaction-list">

@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { DEFAULT_CATEGORIES } from "../data/categories.js";
 import { iconForName, DEFAULT_ICON } from "../data/icons.js";
+import { sortByDateDesc } from "../utils/sortTransactions.js";
 
 const STORAGE_KEY = "money-pocket-data";
 
@@ -202,17 +203,27 @@ export function AppProvider({ children }) {
 
       return {
         ...prev,
-        transactions: [...prev.transactions, ...newTx].sort((a, b) =>
-          a.date < b.date ? 1 : -1,
-        ),
+        transactions: [...prev.transactions, ...newTx],
         categories: [...prev.categories, ...newCats],
       };
     });
   }
 
-  // ----- computed: running balance per currency (income minus spending,
-  // always all-time, never affected by the list's filters) -----
+  // ----- computed -----
 
+  // Every consumer (list, charts, filters) reads transactions through
+  // this, so date order is guaranteed app-wide no matter which mutator
+  // last touched the array — addTransaction prepends, updateTransaction
+  // edits in place, mergeImportedData appends. None of them need to
+  // worry about re-sorting; this is the one place that does it.
+  const sortedTransactions = useMemo(
+    () => sortByDateDesc(state.transactions),
+    [state.transactions],
+  );
+
+  // Running balance per currency (income minus spending, always
+  // all-time, never affected by the list's filters). Order-independent,
+  // so this can sum the raw unsorted array.
   const balancesByCurrency = useMemo(() => {
     const totals = {};
     for (const tx of state.transactions) {
@@ -223,7 +234,7 @@ export function AppProvider({ children }) {
   }, [state.transactions]);
 
   const value = {
-    transactions: state.transactions,
+    transactions: sortedTransactions,
     categories: state.categories,
     activeCurrencyCodes: state.activeCurrencyCodes,
     lastUsedCurrencyCode: state.lastUsedCurrencyCode,
