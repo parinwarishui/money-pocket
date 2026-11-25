@@ -1,0 +1,17 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+# Serve Firebase's sign-in pages from this site's own domain so that
+# signInWithRedirect works on Safari / iOS (authDomain = this site).
+[[redirects]]
+  from = "/__/auth/*"
+  to = "https://pingus-money-pocket.firebaseapp.com/__/auth/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/__/firebase/*"
+  to = "https://pingus-money-pocket.firebaseapp.com/__/firebase/:splat"
+  status = 200
+  force = true
