@@ -285,3 +285,85 @@ describe("AppContext — transaction ordering (regression tests)", () => {
     expect(result.current.categories.map((c) => c.name)).toContain("Food");
   });
 });
+
+describe("AppContext — mergeImportedData (import overwrite option)", () => {
+  it("by default, skips a row whose id already exists instead of overwriting it", async () => {
+    const { result } = await renderApp();
+
+    await act(async () => {
+      result.current.addTransaction({
+        date: "2026-11-01",
+        category: FOOD,
+        amount: 10,
+        currencyCode: "SGD",
+        note: "original",
+      });
+    });
+    const existingId = result.current.transactions[0].id;
+
+    await act(async () => {
+      await result.current.mergeImportedData({
+        transactions: [
+          { id: existingId, date: "2026-11-01", categoryIcon: "x", categoryName: "Shopping", amount: 999, currencyCode: "SGD", note: "from file", type: "expense" },
+        ],
+        categories: [],
+      });
+    });
+
+    const tx = result.current.transactions.find((t) => t.id === existingId);
+    expect(tx.note).toBe("original");
+    expect(tx.amount).toBe(10);
+    expect(tx.categoryName).toBe("Food");
+  });
+
+  it("with overwrite: true, replaces a row whose id already exists with the imported data", async () => {
+    const { result } = await renderApp();
+
+    await act(async () => {
+      result.current.addTransaction({
+        date: "2026-11-01",
+        category: FOOD,
+        amount: 10,
+        currencyCode: "SGD",
+        note: "original",
+      });
+    });
+    const existingId = result.current.transactions[0].id;
+
+    await act(async () => {
+      await result.current.mergeImportedData(
+        {
+          transactions: [
+            { id: existingId, date: "2026-11-02", categoryIcon: "shopping_bag", categoryName: "Shopping", amount: 999, currencyCode: "SGD", note: "from file", type: "expense" },
+          ],
+          categories: [],
+        },
+        { overwrite: true }
+      );
+    });
+
+    const tx = result.current.transactions.find((t) => t.id === existingId);
+    expect(tx.note).toBe("from file");
+    expect(tx.amount).toBe(999);
+    expect(tx.categoryName).toBe("Shopping");
+    expect(tx.date).toBe("2026-11-02");
+  });
+
+  it("with overwrite: true, still adds rows whose id does not already exist", async () => {
+    const { result } = await renderApp();
+
+    await act(async () => {
+      await result.current.mergeImportedData(
+        {
+          transactions: [
+            { id: "brand-new-id", date: "2026-11-03", categoryIcon: "restaurant", categoryName: "Food", amount: 7, currencyCode: "SGD", note: "new row", type: "expense" },
+          ],
+          categories: [],
+        },
+        { overwrite: true }
+      );
+    });
+
+    expect(result.current.transactions.some((t) => t.id === "brand-new-id" && t.note === "new row")).toBe(true);
+  });
+});

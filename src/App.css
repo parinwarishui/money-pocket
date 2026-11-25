@@ -307,3 +307,14 @@ button, input, select { font-family: inherit; color: inherit; }
 
 .account-email { color: var(--muted); font-size: 0.9rem; margin: 0 0 10px; }
 .section-hint { color: var(--muted); font-size: 0.82rem; margin: 0 0 12px; }
+
+.checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+  cursor: pointer;
+}
+.checkbox-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
+.checkbox-row span { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; }
+.checkbox-row small { color: var(--muted); font-size: 0.78rem; font-weight: 400; }

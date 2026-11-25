@@ -171,9 +171,14 @@ export function AppProvider({ children }) {
     updateDoc(settingsRef, { activeCurrencyCodes: arrayUnion(code) });
   }
 
-  // ----- import (merge by id, local always wins) -----
+  // ----- import (merge by id; by default local always wins, matching
+  // rows are left untouched — pass { overwrite: true } to instead let
+  // the imported file replace them) -----
 
-  async function mergeImportedData({ transactions: importedTx, categories: importedCats }) {
+  async function mergeImportedData(
+    { transactions: importedTx, categories: importedCats },
+    { overwrite = false } = {}
+  ) {
     const existingTxIds = new Set(transactions.map((t) => t.id));
     const existingCatIds = new Set(categories.map((c) => c.id));
 
@@ -181,7 +186,8 @@ export function AppProvider({ children }) {
     let writes = 0;
 
     for (const t of importedTx) {
-      if (existingTxIds.has(t.id)) continue;
+      const isExisting = existingTxIds.has(t.id);
+      if (isExisting && !overwrite) continue;
       const withType = t.type ? t : { ...t, type: "expense" };
       const withIcon = withType.categoryIcon
         ? withType
@@ -192,7 +198,8 @@ export function AppProvider({ children }) {
     }
 
     for (const c of importedCats || []) {
-      if (existingCatIds.has(c.id)) continue;
+      const isExisting = existingCatIds.has(c.id);
+      if (isExisting && !overwrite) continue;
       const withIcon = c.icon ? c : { ...c, icon: iconForName(c.name) || DEFAULT_ICON };
       const { id, ...data } = withIcon;
       batch.set(doc(catCollection, id), data);
