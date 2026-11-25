@@ -209,6 +209,36 @@ export function AppProvider({ children }) {
     if (writes > 0) await batch.commit();
   }
 
+  // ----- reset (delete everything, then reseed like a brand-new account) -----
+
+  // Firestore batches cap out at 500 writes, so a reset on an account
+  // with a lot of history is split across as many batches as needed.
+  async function commitInChunks(ops) {
+    const CHUNK_SIZE = 450;
+    for (let i = 0; i < ops.length; i += CHUNK_SIZE) {
+      const batch = writeBatch(db);
+      for (const op of ops.slice(i, i + CHUNK_SIZE)) {
+        if (op.type === "delete") batch.delete(op.ref);
+        else batch.set(op.ref, op.data);
+      }
+      await batch.commit();
+    }
+  }
+
+  async function resetAllData() {
+    const ops = [
+      ...transactions.map((t) => ({ type: "delete", ref: doc(txCollection, t.id) })),
+      ...categories.map((c) => ({ type: "delete", ref: doc(catCollection, c.id) })),
+      ...DEFAULT_CATEGORIES.map((c) => ({
+        type: "set",
+        ref: doc(catCollection, c.id),
+        data: { icon: c.icon, name: c.name },
+      })),
+      { type: "set", ref: settingsRef, data: DEFAULT_SETTINGS },
+    ];
+    await commitInChunks(ops);
+  }
+
   // ----- computed -----
 
   // Every consumer (list, charts, filters) reads transactions through
@@ -247,6 +277,7 @@ export function AppProvider({ children }) {
     deleteCategory,
     addCurrency,
     mergeImportedData,
+    resetAllData,
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

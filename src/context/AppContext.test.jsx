@@ -367,3 +367,48 @@ describe("AppContext — mergeImportedData (import overwrite option)", () => {
     expect(result.current.transactions.some((t) => t.id === "brand-new-id" && t.note === "new row")).toBe(true);
   });
 });
+
+describe("AppContext — resetAllData", () => {
+  it("deletes every transaction and category, then reseeds the default categories", async () => {
+    const { result } = await renderApp();
+
+    await act(async () => {
+      result.current.addTransaction({ date: "2026-11-01", category: FOOD, amount: 5, currencyCode: "SGD", note: "will be wiped" });
+    });
+    await act(async () => {
+      result.current.addCategory({ icon: "pets", name: "Custom category" });
+    });
+    expect(result.current.transactions.length).toBeGreaterThan(0);
+    expect(result.current.categories.some((c) => c.name === "Custom category")).toBe(true);
+
+    await act(async () => {
+      await result.current.resetAllData();
+    });
+
+    // The custom transaction and the custom category are gone...
+    expect(result.current.transactions).toEqual([]);
+    expect(result.current.categories.some((c) => c.name === "Custom category")).toBe(false);
+    // ...but the account isn't left broken — it comes back with the same
+    // default categories a brand-new account gets.
+    expect(result.current.categories.some((c) => c.name === "Food")).toBe(true);
+  });
+
+  it("leaves nothing over the Firestore batch write limit behind on a large reset", async () => {
+    const { result } = await renderApp();
+
+    // Enough rows that a single 500-op batch couldn't hold the deletes
+    // alone, to exercise the chunking path rather than the common case.
+    for (let i = 0; i < 520; i++) {
+      await act(async () => {
+        result.current.addTransaction({ date: "2026-11-01", category: FOOD, amount: 1, currencyCode: "SGD", note: `row ${i}` });
+      });
+    }
+    expect(result.current.transactions.length).toBe(520);
+
+    await act(async () => {
+      await result.current.resetAllData();
+    });
+
+    expect(result.current.transactions).toEqual([]);
+  });
+});

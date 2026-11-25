@@ -197,6 +197,9 @@ button, input, select { font-family: inherit; color: inherit; }
 .btn-outline:hover { background: var(--accent-tint); }
 .btn-text-danger { background: none; color: var(--negative); }
 .btn-text-danger:hover { background: #FEF2F2; }
+.btn-danger { background: var(--negative); color: white; }
+.btn-danger:hover { background: #991B1B; }
+.btn-danger:disabled { background: var(--negative); opacity: 0.45; cursor: not-allowed; }
 
 .button-row { display: flex; gap: 8px; flex-wrap: wrap; }
 
@@ -318,3 +321,17 @@ button, input, select { font-family: inherit; color: inherit; }
 .checkbox-row input[type="checkbox"] { margin-top: 3px; flex-shrink: 0; }
 .checkbox-row span { display: flex; flex-direction: column; gap: 2px; font-size: 0.9rem; }
 .checkbox-row small { color: var(--muted); font-size: 0.78rem; font-weight: 400; }
+
+.danger-zone {
+  border: 1px solid #FCA5A5;
+  background: #FEF2F2;
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+.danger-zone h2 { color: var(--negative); }
+.danger-zone .section-hint { color: #7F1D1D; }
+.reset-confirm { display: flex; flex-direction: column; gap: 10px; }
+.reset-confirm input[type="text"] {
+  padding: 10px 12px; font-size: 1rem; border: 1px solid #FCA5A5;
+  border-radius: var(--radius-sm); background: white;
+}

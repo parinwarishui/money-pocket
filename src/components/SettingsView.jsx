@@ -5,13 +5,18 @@ import CategoryManager from "./CategoryManager.jsx";
 import CurrencyManager from "./CurrencyManager.jsx";
 import { exportToXlsx, importFromXlsxFile } from "../utils/exportImport.js";
 
+const RESET_CONFIRM_WORD = "DELETE";
+
 export default function SettingsView({ onClose }) {
-  const { transactions, categories, mergeImportedData } = useApp();
+  const { transactions, categories, mergeImportedData, resetAllData } = useApp();
   const { user, signOut } = useAuth();
   const fileInputRef = useRef(null);
   // Off by default: a row whose id already exists is left alone unless
   // the user deliberately opts in to letting the file overwrite it.
   const [overwriteOnImport, setOverwriteOnImport] = useState(false);
+  const [showResetConfirm, setShowResetConfirm] = useState(false);
+  const [resetConfirmText, setResetConfirmText] = useState("");
+  const [resetting, setResetting] = useState(false);
 
   function handleExport() {
     exportToXlsx(transactions, categories);
@@ -28,6 +33,25 @@ export default function SettingsView({ onClose }) {
       alert("Could not read that file: " + err.message);
     } finally {
       e.target.value = "";
+    }
+  }
+
+  function cancelReset() {
+    setShowResetConfirm(false);
+    setResetConfirmText("");
+  }
+
+  async function handleReset() {
+    if (resetConfirmText !== RESET_CONFIRM_WORD) return;
+    setResetting(true);
+    try {
+      await resetAllData();
+      cancelReset();
+      alert("All data has been deleted.");
+    } catch (err) {
+      alert("Couldn't reset: " + err.message);
+    } finally {
+      setResetting(false);
     }
   }
 
@@ -81,6 +105,51 @@ export default function SettingsView({ onClose }) {
 
       <CategoryManager />
       <CurrencyManager />
+
+      <section className="manager-section danger-zone">
+        <h2>Danger Zone</h2>
+        {!showResetConfirm ? (
+          <>
+            <p className="section-hint">
+              Permanently delete every transaction and category in this account and start
+              over empty. This cannot be undone — export a backup first if you might want
+              this data again.
+            </p>
+            <button className="btn btn-danger" onClick={() => setShowResetConfirm(true)}>
+              Reset all data
+            </button>
+          </>
+        ) : (
+          <div className="reset-confirm">
+            <p className="section-hint">
+              This will permanently delete all {transactions.length} transaction
+              {transactions.length === 1 ? "" : "s"} and all {categories.length} categor
+              {categories.length === 1 ? "y" : "ies"} — there's no undo. Type{" "}
+              <strong>{RESET_CONFIRM_WORD}</strong> to confirm.
+            </p>
+            <input
+              type="text"
+              value={resetConfirmText}
+              onChange={(e) => setResetConfirmText(e.target.value)}
+              placeholder={`Type ${RESET_CONFIRM_WORD}`}
+              autoCapitalize="characters"
+              autoComplete="off"
+            />
+            <div className="button-row">
+              <button
+                className="btn btn-danger"
+                disabled={resetConfirmText !== RESET_CONFIRM_WORD || resetting}
+                onClick={handleReset}
+              >
+                {resetting ? "Deleting…" : "Yes, delete everything"}
+              </button>
+              <button className="btn btn-outline" onClick={cancelReset} disabled={resetting}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+      </section>
     </div>
   );
 }
