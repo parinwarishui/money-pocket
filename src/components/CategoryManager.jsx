@@ -3,8 +3,11 @@ import { useApp } from "../context/AppContext.jsx";
 import { ICON_OPTIONS } from "../data/icons.js";
 import Icon from "./Icon.jsx";
 
-export default function CategoryManager() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useApp();
+// type: "expense" (default) or "income" — which category list this
+// instance manages and what new categories it creates as.
+export default function CategoryManager({ type = "expense", title = "Categories" }) {
+  const { expenseCategories, incomeCategories, addCategory, updateCategory, deleteCategory } = useApp();
+  const categories = type === "income" ? incomeCategories : expenseCategories;
   const [editingId, setEditingId] = useState(null);
   const [icon, setIcon] = useState(ICON_OPTIONS[0]);
   const [name, setName] = useState("");
@@ -28,7 +31,7 @@ export default function CategoryManager() {
   function save() {
     if (!name.trim()) return;
     if (editingId === "new") {
-      addCategory({ icon, name: name.trim() });
+      addCategory({ icon, name: name.trim(), type });
     } else {
       updateCategory(editingId, { icon, name: name.trim() });
     }
@@ -37,7 +40,7 @@ export default function CategoryManager() {
 
   return (
     <section className="manager-section">
-      <h2>Categories</h2>
+      <h2>{title}</h2>
       <ul className="manager-list">
         {categories.map((c) => (
           <li key={c.id}>

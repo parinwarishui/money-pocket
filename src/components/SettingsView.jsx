@@ -103,7 +103,8 @@ export default function SettingsView({ onClose }) {
         />
       </section>
 
-      <CategoryManager />
+      <CategoryManager type="expense" title="Categories" />
+      <CategoryManager type="income" title="Income categories" />
       <CurrencyManager />
 
       <section className="manager-section danger-zone">

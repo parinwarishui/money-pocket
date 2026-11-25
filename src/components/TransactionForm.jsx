@@ -3,14 +3,14 @@ import { useApp } from "../context/AppContext.jsx";
 import { todayISO } from "../utils/dateUtils.js";
 
 export default function TransactionForm({ editingTransaction, onClose }) {
-  const { categories, activeCurrencyCodes, lastUsedCurrencyCode, addTransaction, updateTransaction } =
+  const { expenseCategories, activeCurrencyCodes, lastUsedCurrencyCode, addTransaction, updateTransaction } =
     useApp();
 
   const isEditing = Boolean(editingTransaction);
 
   const [date, setDate] = useState(editingTransaction?.date ?? todayISO());
   const [categoryName, setCategoryName] = useState(
-    editingTransaction?.categoryName ?? categories[0]?.name ?? "",
+    editingTransaction?.categoryName ?? expenseCategories[0]?.name ?? "",
   );
   const [amount, setAmount] = useState(
     editingTransaction ? String(editingTransaction.amount) : "",
@@ -22,7 +22,7 @@ export default function TransactionForm({ editingTransaction, onClose }) {
 
   function handleSubmit(e) {
     e.preventDefault();
-    const category = categories.find((c) => c.name === categoryName);
+    const category = expenseCategories.find((c) => c.name === categoryName);
     if (!category || !amount) return;
 
     const parsedAmount = Math.round(parseFloat(amount) * 100) / 100;
@@ -54,7 +54,7 @@ export default function TransactionForm({ editingTransaction, onClose }) {
           <label>
             Category
             <select value={categoryName} onChange={(e) => setCategoryName(e.target.value)}>
-              {categories.map((c) => (
+              {expenseCategories.map((c) => (
                 <option key={c.id} value={c.name}>
                   {c.name}
                 </option>

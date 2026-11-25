@@ -13,7 +13,7 @@ const PERIOD_TYPES = [
 ];
 
 export default function ChartsView({ onClose }) {
-  const { transactions, categories, activeCurrencyCodes, lastUsedCurrencyCode } = useApp();
+  const { transactions, expenseCategories, activeCurrencyCodes, lastUsedCurrencyCode } = useApp();
 
   const [periodType, setPeriodType] = useState("month");
   const [anchorISO, setAnchorISO] = useState(todayISO());
@@ -24,12 +24,13 @@ export default function ChartsView({ onClose }) {
   }
 
   // Stable per-category color: keyed by each category's position in the
-  // full category list, not by how the bars end up sorted.
+  // expense category list (this chart is spending-only), not by how the
+  // bars end up sorted.
   const categoryIndexByName = useMemo(() => {
     const map = new Map();
-    categories.forEach((c, i) => map.set(c.name, i));
+    expenseCategories.forEach((c, i) => map.set(c.name, i));
     return map;
-  }, [categories]);
+  }, [expenseCategories]);
 
   const bars = useMemo(() => {
     const range = getPeriodRange(periodType, anchorISO);

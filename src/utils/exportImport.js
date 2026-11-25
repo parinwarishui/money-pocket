@@ -24,6 +24,7 @@ export function exportToXlsx(transactions, categories) {
     ID: c.id,
     Icon: c.icon || iconForName(c.name),
     Name: c.name,
+    Type: c.type === "income" ? "Income" : "Expense",
   }));
 
   const wb = XLSX.utils.book_new();
@@ -70,6 +71,9 @@ export function importFromXlsxFile(file) {
           id: String(row.ID),
           icon: row.Icon || iconForName(row.Name) || DEFAULT_ICON,
           name: row.Name,
+          // Backups made before income categories existed have no Type
+          // column — everything in them was an expense category.
+          type: String(row.Type || "Expense").toLowerCase() === "income" ? "income" : "expense",
         }));
 
         resolve({ transactions, categories });

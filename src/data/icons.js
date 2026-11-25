@@ -15,7 +15,7 @@ export const ICON_OPTIONS = [
   "receipt_long", "water_drop", "wifi", "home", "build",
   "movie", "music_note", "confirmation_number", "menu_book", "medication",
   "fitness_center", "content_cut", "pets", "card_giftcard", "inventory_2",
-  "payments", "savings", "school", "celebration", DEFAULT_ICON,
+  "payments", "savings", "school", "celebration", "group", DEFAULT_ICON,
 ];
 
 // Maps a category's name back to a sensible icon. Used to migrate old
@@ -31,6 +31,10 @@ const NAME_TO_ICON = {
   Health: "medication",
   Other: "inventory_2",
   Income: "payments",
+  Salary: "payments",
+  Scholarship: "school",
+  "Friend transfer": "group",
+  "Other income": "card_giftcard",
 };
 
 export function iconForName(name) {

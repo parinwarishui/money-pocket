@@ -5,6 +5,7 @@ import {
   deleteDoc,
   doc,
   getDoc,
+  getDocs,
   onSnapshot,
   setDoc,
   updateDoc,
@@ -12,13 +13,9 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebase.js";
 import { useAuth } from "./AuthContext.jsx";
-import { DEFAULT_CATEGORIES } from "../data/categories.js";
+import { DEFAULT_CATEGORIES, DEFAULT_INCOME_CATEGORIES } from "../data/categories.js";
 import { iconForName, DEFAULT_ICON } from "../data/icons.js";
 import { sortByDateDesc } from "../utils/sortTransactions.js";
-
-// Income transactions don't use the category system — every income row
-// gets this fixed label instead of a picked category.
-export const INCOME_LABEL = { icon: "payments", name: "Income" };
 
 const DEFAULT_SETTINGS = {
   activeCurrencyCodes: ["SGD"],
@@ -45,21 +42,53 @@ export function AppProvider({ children }) {
   const settingsRef = useMemo(() => doc(db, "users", uid), [uid]);
 
   // A brand-new account has no settings doc yet — seed it with the
-  // default categories exactly once. A returning account already has
-  // one, so this never overwrites anything the user has changed.
+  // default expense AND income categories exactly once. A returning
+  // account that predates income categories gets backfilled instead:
+  // any category written before the `type` field existed is assumed to
+  // be an expense category (that's all there used to be), and the
+  // income starter set is added if it doesn't have one yet. Either way
+  // this never touches a category the user has actually edited.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const snap = await getDoc(settingsRef);
+      const [settingsSnap, catsSnap] = await Promise.all([getDoc(settingsRef), getDocs(catCollection)]);
       if (cancelled) return;
-      if (!snap.exists()) {
-        const batch = writeBatch(db);
+
+      const batch = writeBatch(db);
+      let needsCommit = false;
+
+      if (!settingsSnap.exists()) {
         batch.set(settingsRef, DEFAULT_SETTINGS);
-        for (const c of DEFAULT_CATEGORIES) {
-          batch.set(doc(catCollection, c.id), { icon: c.icon, name: c.name });
-        }
-        await batch.commit();
+        needsCommit = true;
       }
+
+      if (catsSnap.docs.length === 0) {
+        for (const c of DEFAULT_CATEGORIES) {
+          batch.set(doc(catCollection, c.id), { icon: c.icon, name: c.name, type: "expense" });
+        }
+        for (const c of DEFAULT_INCOME_CATEGORIES) {
+          batch.set(doc(catCollection, c.id), { icon: c.icon, name: c.name, type: "income" });
+        }
+        needsCommit = true;
+      } else {
+        let hasIncomeCategory = false;
+        for (const d of catsSnap.docs) {
+          const data = d.data();
+          if (data.type === "income") hasIncomeCategory = true;
+          if (!data.type) {
+            batch.update(doc(catCollection, d.id), { type: "expense" });
+            needsCommit = true;
+          }
+        }
+        if (!hasIncomeCategory) {
+          for (const c of DEFAULT_INCOME_CATEGORIES) {
+            batch.set(doc(catCollection, c.id), { icon: c.icon, name: c.name, type: "income" });
+          }
+          needsCommit = true;
+        }
+      }
+
+      if (needsCommit) await batch.commit();
       if (!cancelled) setReady(true);
     })();
     return () => {
@@ -121,12 +150,12 @@ export function AppProvider({ children }) {
 
   // ----- transactions: income -----
 
-  function addIncomeTransaction({ date, amount, currencyCode, note }) {
+  function addIncomeTransaction({ date, category, amount, currencyCode, note }) {
     setDoc(doc(txCollection, crypto.randomUUID()), {
       date,
       type: "income",
-      categoryIcon: INCOME_LABEL.icon,
-      categoryName: INCOME_LABEL.name,
+      categoryIcon: category.icon,
+      categoryName: category.name,
       amount,
       currencyCode,
       note: note || "",
@@ -135,12 +164,12 @@ export function AppProvider({ children }) {
     updateDoc(settingsRef, { lastUsedCurrencyCode: currencyCode });
   }
 
-  function updateIncomeTransaction(id, { date, amount, currencyCode, note }) {
+  function updateIncomeTransaction(id, { date, category, amount, currencyCode, note }) {
     updateDoc(doc(txCollection, id), {
       date,
       type: "income",
-      categoryIcon: INCOME_LABEL.icon,
-      categoryName: INCOME_LABEL.name,
+      categoryIcon: category.icon,
+      categoryName: category.name,
       amount,
       currencyCode,
       note: note || "",
@@ -150,8 +179,8 @@ export function AppProvider({ children }) {
 
   // ----- categories -----
 
-  function addCategory({ icon, name }) {
-    setDoc(doc(catCollection, crypto.randomUUID()), { icon, name });
+  function addCategory({ icon, name, type = "expense" }) {
+    setDoc(doc(catCollection, crypto.randomUUID()), { icon, name, type });
   }
 
   function updateCategory(id, { icon, name }) {
@@ -200,7 +229,8 @@ export function AppProvider({ children }) {
     for (const c of importedCats || []) {
       const isExisting = existingCatIds.has(c.id);
       if (isExisting && !overwrite) continue;
-      const withIcon = c.icon ? c : { ...c, icon: iconForName(c.name) || DEFAULT_ICON };
+      const withType = c.type ? c : { ...c, type: "expense" };
+      const withIcon = withType.icon ? withType : { ...withType, icon: iconForName(withType.name) || DEFAULT_ICON };
       const { id, ...data } = withIcon;
       batch.set(doc(catCollection, id), data);
       writes++;
@@ -232,7 +262,12 @@ export function AppProvider({ children }) {
       ...DEFAULT_CATEGORIES.map((c) => ({
         type: "set",
         ref: doc(catCollection, c.id),
-        data: { icon: c.icon, name: c.name },
+        data: { icon: c.icon, name: c.name, type: "expense" },
+      })),
+      ...DEFAULT_INCOME_CATEGORIES.map((c) => ({
+        type: "set",
+        ref: doc(catCollection, c.id),
+        data: { icon: c.icon, name: c.name, type: "income" },
       })),
       { type: "set", ref: settingsRef, data: DEFAULT_SETTINGS },
     ];
@@ -245,6 +280,14 @@ export function AppProvider({ children }) {
   // this, so date order is guaranteed app-wide no matter what order
   // Firestore's snapshot delivers documents in.
   const sortedTransactions = useMemo(() => sortByDateDesc(transactions), [transactions]);
+
+  // Split by type for the two separate category pickers/managers. A
+  // category missing `type` (shouldn't happen once migration has run,
+  // but the snapshot listener can in principle race ahead of it) is
+  // treated as an expense category, matching what it always meant
+  // before income categories existed.
+  const expenseCategories = useMemo(() => categories.filter((c) => c.type !== "income"), [categories]);
+  const incomeCategories = useMemo(() => categories.filter((c) => c.type === "income"), [categories]);
 
   // Running balance per currency (income minus spending, always
   // all-time, never affected by the list's filters).
@@ -264,6 +307,8 @@ export function AppProvider({ children }) {
   const value = {
     transactions: sortedTransactions,
     categories,
+    expenseCategories,
+    incomeCategories,
     activeCurrencyCodes: settings.activeCurrencyCodes,
     lastUsedCurrencyCode: settings.lastUsedCurrencyCode,
     balancesByCurrency,

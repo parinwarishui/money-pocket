@@ -80,6 +80,11 @@ vi.mock("firebase/firestore", () => {
       return { exists: () => exists, data: () => docsFor(ref.__path).get(ref.__id) };
     },
 
+    getDocs: async (ref) => {
+      const bucket = docsFor(ref.__path);
+      return { docs: [...bucket.entries()].map(([id, data]) => ({ id, data: () => data })) };
+    },
+
     setDoc: async (ref, data) => {
       docsFor(ref.__path).set(ref.__id, data);
       notify(ref.__path);
@@ -128,7 +133,8 @@ vi.mock("firebase/firestore", () => {
 
 vi.mock("../firebase.js", () => ({ db: {}, auth: {}, googleProvider: {} }));
 
-import { __reset } from "firebase/firestore";
+import { __reset, collection, doc, setDoc } from "firebase/firestore";
+import { db } from "../firebase.js";
 import { AppProvider, useApp } from "./AppContext.jsx";
 import { AuthProvider, useAuth } from "./AuthContext.jsx";
 import { groupTransactionsByDay } from "../utils/groupTransactions.js";
@@ -283,6 +289,72 @@ describe("AppContext — transaction ordering (regression tests)", () => {
     const { result } = await renderApp();
     expect(result.current.categories.length).toBeGreaterThan(0);
     expect(result.current.categories.map((c) => c.name)).toContain("Food");
+    // A brand-new account gets income starter categories too, not just
+    // expense ones.
+    expect(result.current.incomeCategories.map((c) => c.name)).toContain("Salary");
+  });
+});
+
+describe("AppContext — income categories", () => {
+  it("expenseCategories and incomeCategories are split by the category's type", async () => {
+    const { result } = await renderApp();
+    expect(result.current.expenseCategories.every((c) => c.type !== "income")).toBe(true);
+    expect(result.current.incomeCategories.every((c) => c.type === "income")).toBe(true);
+    // Both come out of the same seeded set, so neither should be empty.
+    expect(result.current.expenseCategories.length).toBeGreaterThan(0);
+    expect(result.current.incomeCategories.length).toBeGreaterThan(0);
+  });
+
+  it("an income transaction takes on the icon/name of the category it's filed under, not a fixed label", async () => {
+    const { result } = await renderApp();
+    const friendTransfer = result.current.incomeCategories.find((c) => c.name === "Friend transfer");
+
+    await act(async () => {
+      result.current.addIncomeTransaction({
+        date: "2026-11-20",
+        category: friendTransfer,
+        amount: 15,
+        currencyCode: "SGD",
+        note: "lunch split",
+      });
+    });
+
+    const tx = result.current.transactions.find((t) => t.note === "lunch split");
+    expect(tx.type).toBe("income");
+    expect(tx.categoryName).toBe("Friend transfer");
+    expect(tx.categoryIcon).toBe(friendTransfer.icon);
+  });
+
+  it("addCategory with type: \"income\" creates a category that only shows up in incomeCategories", async () => {
+    const { result } = await renderApp();
+
+    await act(async () => {
+      result.current.addCategory({ icon: "card_giftcard", name: "Side gig", type: "income" });
+    });
+
+    expect(result.current.incomeCategories.some((c) => c.name === "Side gig")).toBe(true);
+    expect(result.current.expenseCategories.some((c) => c.name === "Side gig")).toBe(false);
+  });
+
+  it("migrates an existing account from before income categories existed", async () => {
+    // Simulate an account that already has a settings doc (so this
+    // isn't treated as brand-new) and one category written before the
+    // `type` field existed.
+    await setDoc(doc(db, "users", "test-uid"), { activeCurrencyCodes: ["SGD"], lastUsedCurrencyCode: "SGD" });
+    await setDoc(doc(collection(db, "users", "test-uid", "categories"), "legacy-cat"), {
+      icon: "restaurant",
+      name: "Legacy Food",
+    });
+
+    const { result } = await renderApp();
+
+    // The pre-existing category is backfilled as an expense category,
+    // not dropped or left untyped...
+    const legacy = result.current.categories.find((c) => c.name === "Legacy Food");
+    expect(legacy.type).toBe("expense");
+    expect(result.current.expenseCategories.some((c) => c.name === "Legacy Food")).toBe(true);
+    // ...and the income starter set gets added on top of it.
+    expect(result.current.incomeCategories.some((c) => c.name === "Salary")).toBe(true);
   });
 });
 
